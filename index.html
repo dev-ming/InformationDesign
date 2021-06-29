@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset= "utf-8">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+	<title>서울 아파트 매매가</title>
+    <style type="text/css">
+
+        svg path:hover {
+            stroke: #333;
+            stroke-width: 1px;
+        }
+		body {
+			background: #fff;
+        }
+        .place-label {
+            stroke:#333;
+            font-family: 'Nanum Gothic', sans-serif;
+            font-size: 10px;
+            fill: black;
+        }
+        .rate-label {
+            position: absolute;
+            text-align: center;
+            padding: .5rem;
+            background:whitesmoke;
+            color: #313639;
+            border: 1px solid #313639;
+            border-radius: 8px;
+            pointer-events: none;
+            font-family: 'Nanum Gothic', sans-serif;
+            font-size: 15px;
+        }
+        #maptitle{
+            //text-align: center;
+            font-family: 'Nanum Gothic', sans-serif;
+            width: 600px;
+            height: 50px;
+            padding-top: 30px;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        #charttitle{
+            text-align: center;
+            width: 800px;
+            height: 50px;
+            font-weight: bold;
+        }
+        form  {
+            float: left;
+            margin: 0 0 0 0 !importanct;
+            width: 600px;
+            height: 800px;
+        }
+        #mySlider { width : "1000"; }
+        #mySlider .ui-slider-range { background: #8A4C00; }
+        #mySlider .ui-slider-handle { background: #A8C8E6; }
+        .bar{
+            fill: #CFCFCF;
+        }
+
+        .bar:hover{
+            fill: #9E9E9E;
+        }
+
+        .axis {
+            font: 10px sans-serif;
+        }
+
+        .axis path,.axis line {
+            fill: none;
+            stroke: #000;
+            stroke-width: 1;
+            shape-rendering: crispEdges;
+        }
+        .jinboline:hover{
+            stroke: blue;
+            stroke-width: 3px;
+        }
+        .bosuline:hover{
+            stroke: red;
+            stroke-width: 3px;
+        }
+	</style>
+</head> 
+
+<body onload="init();">
+    <form style = "margin-left: 40px">
+        <div id="maptitle"></div>
+        <p>
+            <label for="date" style="color: #8A4C00; font-family: 'Nanum Gothic', sans-serif; font-size: 23px; font-weight: bold"><br>기간내 실거래가 평균🏠<br>
+            </label>
+            <div style = "margin-right: 130px"id ="mySlider">    
+            </div><br> 
+            <input type="text" id="date" style=" margin-left: 230px; color: #6E6E6E; border: 0; font-weight:bold; font-family: Verdana, 'Nanum Gothic'; font-size: 18px" disabled>
+        </p>
+        <div style = "margin-left: 10px; margin-right: 100px"id ="mySlider"></div> <br> 
+        
+        <div id="seoulMap">
+            <svg id="map" width="650" height="500"></svg>
+
+        </div> 
+        <div style = "margin-left: 10px; margin-top: -480px">
+            <img src="colorbar.png" alt="My Image" width="60" height="130">
+        </div>
+        
+    </form>
+
+    <form style = "margin-top: 20px">
+        <div id="charttitle"></div>
+        <div id="myChart">
+        </div>
+        <img src="flow.png" alt="My Image" width="920" height="200" style = "margin-left: 60px">
+
+
+    </form>
+
+    <script src="https://d3js.org/d3-color.v2.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v2.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v2.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script src="https://d3js.org/d3-queue.v3.min.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.3/themes/hot-sneaks/jquery-ui.css" />
+	<script src="http://code.jquery.com/jquery-2.1.3.js"></script>
+	<script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+    <script type="text/javascript" src="map.js"></script>
+    <script>
+        $(document).ready(function() {
+        $( "#mySlider .ui-slider-range" ).css('background', 'rgb(0,255,0)');
+        $( "#mySlider" ).slider({
+            range: true,
+            min: 0,
+            max: 106,
+            values: [ 0, 106 ],
+            slide: function( event, ui ) {
+                var syear = 2012
+                var smonth = 1
+                var start_year = (parseInt(ui.values[0] / 12) + syear)
+                var start_month = (parseInt(ui.values[0] % 12) + smonth)
+                if ( start_month < 10){
+                    start_month = '0'+start_month;
+                }
+                var start = start_year + '년 ' +  start_month + '월'
+                var end_year = (parseInt(ui.values[1] / 12) + syear)
+                var end_month = (parseInt(ui.values[1] % 12) + smonth)
+                var end = end_year + '년 ' +  end_month + '월'
+                $( "#date" ).val(  start + " - " + end );
+            },
+            stop: function(event, ui){
+                var v1 = ui.values[0]
+                var v2 = ui.values[1]
+                var syear = 2012
+                var smonth = 1
+                var start_year = (parseInt(ui.values[0] / 12) + syear)
+                var start_month = (parseInt(ui.values[0] % 12) + smonth)
+                if ( start_month < 10){
+                    start_month = '0'+start_month;
+                }
+                var start = start_year + '년 ' +  start_month + '월'
+                var end_year = (parseInt(ui.values[1] / 12) + syear)
+                var end_month = (parseInt(ui.values[1] % 12) + smonth)
+                var end = end_year + '년 ' +  end_month + '월'
+                $( "#date" ).val(  start + " - " + end );
+                var maptitle = document.getElementById("maptitle")
+                // maptitle.innerText ="서울 아파트 매매가 평균\n" + start + " ~ " + end;
+                maptitle.innerText ="서울 아파트 매매가 지도\n";
+                
+                
+                var count = v2 - v1 +1;
+                var date_range = []
+                if (count == 1){
+                    var year = (parseInt(v2 / 12) + syear);
+                    var month = (parseInt(v2 % 12) + smonth);
+                    if ( month < 10){
+                        month = '0'+month;
+                    }
+                    var date = year + '년 ' +  month + '월'
+                    date_range.push(date)
+                }
+                else{
+                    for(var i=v1;i<v2;i++){
+                        var year = (parseInt(i / 12) + syear);
+                        var month = (parseInt(i % 12) + smonth);
+                        if ( month < 10){
+                            month = '0'+month;
+                        }
+                        var date = year + '년 ' +  month + '월'
+                        date_range.push(date)
+                    }
+                }
+
+                d3.selectAll("path").remove();
+                d3.selectAll(".place-label").remove();
+                d3.selectAll("#gu-chart").remove();
+
+                // map color
+                var minColor = '#FBEEE8',
+                maxColor = '#B76200' ;
+
+                //color sclae 생성
+                var color = d3.scale.linear()   
+                .domain([0,20])
+                .range([minColor, maxColor])
+
+                // svg 생성
+                var svg = d3.select("svg"),
+                width = +svg.attr('width')
+                height = +svg.attr('height')
+
+                // 투영법
+                var projection = d3.geo.mercator()
+                .center([126.9895, 37.5651])
+                .scale(80000)
+                .translate([width/2, height/2]);
+                
+                var path = d3.geo.path().projection(projection);
+                var seoul = d3.map()
+                var div = d3.select ( "body"). append ( "div") 
+                        .attr ( "class", "rate-label") 
+                        .style ( "opacity", 0);
+                
+                var avg_arr = []
+                // 파일 불러오기
+                d3.queue()
+                .defer(d3.json, "./seoulbound_gu.json")
+                .defer(d3.csv, "./homeprice_SGG.csv", function(d){
+                    var tmp = 0;
+                    date_range.forEach(function(f){
+                        tmp += +d[f];
+                    })
+                    var avg = parseInt(tmp / count);
+                    avg_arr.push(avg)
+                    seoul.set(d.SGG_NAME, avg);
+                })
+                .await(ready);
+
+                function ready(error, data){
+                    var max_num = 0;
+                    var min_num = 10000000;
+                    avg_arr.forEach(function(d){
+                        if (+d > max_num){
+                            max_num = +d
+                        }
+                        if (+d < min_num){
+                            min_num = +d
+                        }
+                    })
+                    var sep = parseInt((max_num - min_num) / 20);
+                    var features = topojson.feature(data, data.objects.seoulbound_gu).features;
+
+                    features.forEach(function(d) {
+                        d.properties.rate = seoul.get(d.properties.SIG_KOR_NM);
+                    });
+
+                    svg.selectAll("path")
+                        .data(features)
+                        .enter()
+                        .append("path")
+                        .attr("d", path)
+                        .attr("fill", function(d, i){
+                            // r = parseInt((features[i].properties.rate-min_num) / sep);
+                            r = parseInt((features[i].properties.rate) / 100000);
+                            return color(r);
+                        })
+                        .on("mouseover", function(d, i){
+                            div.transition()
+                                .duration('50')
+                                .style("opacity", 1)
+                            var s = d.properties.SIG_KOR_NM + " : " + d.properties.rate.toString().slice(0,-3) + "(백만원)";
+                            div.html(s)
+                                .style("left", (d3.event.pageX + 10) + "px")
+                                .style("top", (d3.event.pageY - 15) + "px");
+                        })
+                        .on("mouseout", function(d, i){
+                            div.transition()
+                                .duration('50')
+                                .style("opacity", 0)
+                        })
+                        .on("click", function(d){
+                            var gu_name = d.properties.SIG_KOR_NM;
+                            draw_graph(gu_name)
+                        })
+
+                    svg.selectAll(".place-label")
+                        .data(features)
+                        .enter().append("text")
+                        .attr("class", function(d){
+                            return "place-label"; 
+                        })
+                        .attr("transform", function(d){
+                            return "translate(" + path.centroid(d) + ")";
+                        })
+                        .attr("dy", ".50em")
+                        .attr("dx", "-2em")
+                        .text(function(d){
+                            var s = d.properties.SIG_KOR_NM;
+                            if (!s) return; 
+                            return s;
+                        });
+                }
+            }
+        });
+          
+        $( "#date" ).val("2012년 1월 - 2020년 11월");
+          
+        });
+    </script>
+</body>
+
+</html>
